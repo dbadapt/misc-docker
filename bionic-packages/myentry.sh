@@ -31,6 +31,8 @@ process_repo "testing"
 echo "Main packages:"
 process_repo "main"
 
-# cmd hook
+# command hook
 
+# I want array expansions so please 
+# shellcheck disable=SC2068
 [ "$1" != "" ] && $@
