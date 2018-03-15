@@ -1,29 +1,36 @@
-#!/bin/sh
+#!/bin/bash
+
+repocnf="/etc/apt/sources.list.d/percona-release.list"
 
 grep ^VERSION= /etc/os-release
 echo "-----"
 
+process_repo() {
+  repo="$1";
+  for r in "main" "testing" "experimental"; do
+    if [ "${r}" != "${repo}" ]; then
+      sed -Ei "s/^#*(.*${r}\$)/#\\1/" "${repocnf}" > /dev/null 2>&1
+    else
+      sed -Ei "s/^#*(.*${r}\$)/\\1/" "${repocnf}" > /dev/null 2>&1
+    fi
+  done
+  apt-get update > /dev/null 2>&1
+  lz4cat "/var/lib/apt/lists/repo.percona.com_apt_dists_bionic_${repo}_binary-amd64_Packages.lz4" \
+    | grep '^Package:' \
+    | while read -r line; do echo -e "\t$line"; done
+}
+
+# main
+
 echo "Experimental packages:"
-sed -Ei 's/^#*(.* main$)/#\1/' /etc/apt/sources.list.d/percona-release.list 2>&1 > /dev/null
-sed -Ei 's/^#*(.* testing$)/#\1/' /etc/apt/sources.list.d/percona-release.list 2>&1 > /dev/null
-sed -Ei 's/^#*(.* experimental$)/\1/' /etc/apt/sources.list.d/percona-release.list 2>&1 > /dev/null
-apt-get update 2>&1 > /dev/null
-lz4cat /var/lib/apt/lists/repo.percona.com_apt_dists_bionic_experimental_binary-amd64_Packages.lz4  | grep '^Package:' | while read line; do /bin/echo -e "\t$line"; done
+process_repo "experimental"
 
 echo "Testing packages:"
-sed -Ei 's/^#*(.* main$)/#\1/' /etc/apt/sources.list.d/percona-release.list 2>&1 > /dev/null
-sed -Ei 's/^#*(.* testing$)/\1/' /etc/apt/sources.list.d/percona-release.list 2>&1 > /dev/null
-sed -Ei 's/^#*(.* experimental$)/#\1/' /etc/apt/sources.list.d/percona-release.list 2>&1 > /dev/null
-apt-get update 2>&1 > /dev/null
-lz4cat /var/lib/apt/lists/repo.percona.com_apt_dists_bionic_testing_binary-amd64_Packages.lz4  | grep '^Package:' | while read line; do /bin/echo -e "\t$line"; done
-
+process_repo "testing"
 
 echo "Main packages:"
-sed -Ei 's/^#*(.* main$)/\1/' /etc/apt/sources.list.d/percona-release.list 2>&1 > /dev/null
-sed -Ei 's/^#*(.* testing$)/#\1/' /etc/apt/sources.list.d/percona-release.list 2>&1 > /dev/null
-sed -Ei 's/^#*(.* experimental$)/#\1/' /etc/apt/sources.list.d/percona-release.list 2>&1 > /dev/null
-apt-get update 2>&1 > /dev/null
-lz4cat /var/lib/apt/lists/repo.percona.com_apt_dists_bionic_main_binary-amd64_Packages.lz4  | grep '^Package:' | while read line; do /bin/echo -e "\t$line"; done
- 
+process_repo "main"
 
+# cmd hook
 
+[ "$1" != "" ] && $@
