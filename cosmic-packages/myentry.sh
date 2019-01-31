@@ -14,7 +14,7 @@ process_repo() {
   apt-get update > /dev/null 2>&1
   packages_file="/var/lib/apt/lists/repo.percona.com_${internal_repo}_apt_dists_cosmic_${internal_component}_binary-amd64_Packages.lz4"
   [ -e ${packages_file} ] && ( \
-    lz4cat "/var/lib/apt/lists/repo.percona.com_${internal_repo}_apt_dists_cosmic_${internal_component}_binary-amd64_Packages.lz4" \
+    lz4cat "${packages_file}" \
       | grep '^Package:' \
       | while read -r line; do echo -e "\t$line"; done
   )
